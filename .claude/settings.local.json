@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(printf \"Greek\\\\nno restrictions\\\\ntomatoes, cucumber, feta, olives\\\\n\")",
+      "Bash(mvn -q exec:java -Dexec.mainClass=com.crispyland.App)",
+      "Bash(mvn compile:*)",
+      "Bash(printf \"Caesar\\\\nI'm vegan\\\\ntomatoes, cucumbers, olives\\\\n\")"
+    ]
+  }
+}

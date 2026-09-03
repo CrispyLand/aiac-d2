@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Groq AI Explorer</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            color: #1a1a2e;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px 32px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        header h1 { font-size: 1.6rem; font-weight: 800; }
+        header p  { font-size: 0.85rem; opacity: 0.8; margin-top: 4px; }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: white;
+            border-bottom: 2px solid #e0e0e0;
+            padding: 0 32px;
+        }
+        .tab-btn {
+            padding: 14px 24px;
+            border: none;
+            background: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+        .tab-btn.active { color: #667eea; border-bottom-color: #667eea; }
+
+        .tab-content { display: none; padding: 24px 32px; }
+        .tab-content.active { display: block; }
+
+        /* Controls */
+        .controls {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+        .controls-row {
+            display: flex;
+            gap: 20px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        .control-group { display: flex; flex-direction: column; gap: 6px; }
+        .control-group label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        select {
+            padding: 8px 12px;
+            border: 1.5px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            background: white;
+            color: #333;
+            outline: none;
+            cursor: pointer;
+        }
+        select:focus { border-color: #667eea; }
+        input[type="range"] { width: 140px; accent-color: #667eea; }
+        .val-label { font-size: 0.85rem; font-weight: 700; color: #667eea; }
+
+        .length-btns { display: flex; gap: 4px; }
+        .length-btn {
+            padding: 8px 16px;
+            border: 1.5px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: #555;
+            transition: all 0.2s;
+        }
+        .length-btn.active { background: #667eea; border-color: #667eea; color: white; }
+
+        .prompt-area { display: flex; gap: 12px; margin-top: 16px; }
+        textarea {
+            flex: 1;
+            padding: 12px;
+            border: 1.5px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+            outline: none;
+        }
+        textarea:focus { border-color: #667eea; }
+
+        .btn-primary {
+            padding: 12px 28px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            align-self: flex-end;
+            white-space: nowrap;
+        }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Output panels */
+        .output-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        .panel {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .panel-header {
+            padding: 14px 20px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .panel-header.unstructured { background: #fff8f0; color: #c0552a; }
+        .panel-header.structured   { background: #f0f8ff; color: #1a6fa8; }
+
+        .badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .badge-orange { background: #fde8cc; color: #c0552a; }
+        .badge-blue   { background: #cce8fd; color: #1a6fa8; }
+
+        .panel-body {
+            padding: 20px;
+            min-height: 220px;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            color: #444;
+        }
+        .panel-body.loading { display: flex; align-items: center; justify-content: center; }
+
+        .placeholder-text { color: #bbb; font-style: italic; }
+
+        /* Benefit items */
+        .benefit-item { margin-bottom: 14px; }
+        .benefit-item .benefit-num {
+            display: inline-block;
+            width: 24px; height: 24px;
+            background: #1a6fa8;
+            color: white;
+            border-radius: 50%;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-align: center;
+            line-height: 24px;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+        .benefit-item .benefit-title { font-weight: 700; color: #222; }
+        .benefit-item .benefit-desc  { color: #555; margin-top: 3px; padding-left: 32px; }
+
+        /* Spinner */
+        .spinner {
+            width: 28px; height: 28px;
+            border: 3px solid #eee;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Salad chat */
+        .chat-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .chat-header {
+            padding: 14px 20px;
+            background: linear-gradient(135deg, #56ab2f, #a8e063);
+            color: white;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+        .chat-messages {
+            height: 440px;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .chat-bubble {
+            max-width: 72%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 0.9rem;
+            line-height: 1.55;
+        }
+        .chat-bubble.assistant {
+            background: #f0f2f5;
+            color: #333;
+            border-bottom-left-radius: 4px;
+            align-self: flex-start;
+        }
+        .chat-bubble.user {
+            background: linear-gradient(135deg, #56ab2f, #a8e063);
+            color: white;
+            border-bottom-right-radius: 4px;
+            align-self: flex-end;
+        }
+
+        /* Recipe card */
+        .recipe-card {
+            align-self: stretch;
+            background: #f6fff0;
+            border: 1.5px solid #a8e063;
+            border-radius: 14px;
+            padding: 20px;
+        }
+        .recipe-card .intro { font-style: italic; color: #555; margin-bottom: 12px; font-size: 0.88rem; }
+        .recipe-card h2 { font-size: 1.1rem; font-weight: 800; color: #2d6a0f; margin-bottom: 14px; }
+        .recipe-card h3 {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #56ab2f;
+            margin: 12px 0 6px;
+        }
+        .recipe-card ul, .recipe-card ol { padding-left: 20px; }
+        .recipe-card li { font-size: 0.88rem; line-height: 1.6; color: #333; margin-bottom: 3px; }
+
+        .chat-start {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 14px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        .btn-start {
+            padding: 12px 36px;
+            background: linear-gradient(135deg, #56ab2f, #a8e063);
+            color: white;
+            border: none;
+            border-radius: 24px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(86,171,47,0.3);
+        }
+        .btn-start:hover { opacity: 0.9; }
+
+        .chat-input-area {
+            display: flex;
+            gap: 10px;
+            padding: 14px 16px;
+            border-top: 1px solid #f0f0f0;
+        }
+        .chat-input-area input {
+            flex: 1;
+            padding: 10px 18px;
+            border: 1.5px solid #ddd;
+            border-radius: 24px;
+            font-size: 0.9rem;
+            outline: none;
+            font-family: inherit;
+        }
+        .chat-input-area input:focus { border-color: #56ab2f; }
+        .btn-send {
+            padding: 10px 22px;
+            background: linear-gradient(135deg, #56ab2f, #a8e063);
+            color: white;
+            border: none;
+            border-radius: 24px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-send:hover { opacity: 0.9; }
+        .btn-send:disabled, .chat-input-area input:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .salad-controls { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+        .val-label-green { font-size: 0.85rem; font-weight: 700; color: #56ab2f; }
+
+        /* JSON reference panel */
+        .json-panel {
+            margin-top: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .json-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 18px;
+            background: #1e1e2e;
+            color: #cdd6f4;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+        }
+        .json-panel-header .toggle-icon { font-size: 0.75rem; opacity: 0.7; }
+        .json-panel-body {
+            background: #1e1e2e;
+            padding: 0 18px 16px;
+            max-height: 260px;
+            overflow-y: auto;
+        }
+        .json-panel-body.collapsed { display: none; }
+        pre.json-ref {
+            color: #cdd6f4;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .json-placeholder { color: #6c7086; font-style: italic; font-size: 0.8rem; padding: 4px 0 8px; }
+        .json-key  { color: #89b4fa; }
+        .json-str  { color: #a6e3a1; }
+        .json-num  { color: #fab387; }
+        .json-bool { color: #f38ba8; }
+        .json-null { color: #6c7086; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Groq AI Explorer</h1>
+    <p>Section 1 &amp; 2: Unconstrained vs Structured output &nbsp;|&nbsp; Section 3: Multi-turn salad assistant with recipe schema</p>
+</header>
+
+<div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('compare', this)">
+        Sections 1 &amp; 2 — Comparison
+    </button>
+    <button class="tab-btn" onclick="switchTab('salad', this)">
+        Section 3 — Salad Assistant
+    </button>
+</div>
+
+<!-- ===== SECTIONS 1 & 2: COMPARISON ===== -->
+<div id="compare-tab" class="tab-content active">
+    <div class="controls">
+        <div class="controls-row">
+            <div class="control-group">
+                <label>Temperature &nbsp;<span class="val-label" id="temp-label">0.7</span></label>
+                <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7"
+                       oninput="document.getElementById('temp-label').textContent = parseFloat(this.value).toFixed(1)">
+            </div>
+            <div class="control-group">
+                <label>Answer Length</label>
+                <div class="length-btns">
+                    <button class="length-btn" onclick="setLength('short', this)">Short</button>
+                    <button class="length-btn active" onclick="setLength('medium', this)">Medium</button>
+                    <button class="length-btn" onclick="setLength('long', this)">Long</button>
+                </div>
+            </div>
+            <div class="control-group">
+                <label>Max Tokens &nbsp;<span class="val-label" id="compare-tokens-label">2048</span></label>
+                <input type="range" id="compare-max-tokens" min="256" max="8192" step="256" value="2048"
+                       oninput="document.getElementById('compare-tokens-label').textContent = this.value">
+            </div>
+        </div>
+        <div class="prompt-area">
+            <textarea id="compare-prompt" placeholder="Enter your prompt…">Give the top 3 benefits of using an LLM for a software engineer at work.</textarea>
+            <button class="btn-primary" id="compare-btn" onclick="sendCompare()">Send Both ▶</button>
+        </div>
+    </div>
+
+    <div class="output-panels">
+        <div class="panel">
+            <div class="panel-header unstructured">
+                <span>Section 1 — Unconstrained</span>
+                <span class="badge badge-orange">No schema · free-form</span>
+            </div>
+            <div class="panel-body" id="unstructured-output">
+                <span class="placeholder-text">Free-form response will appear here…</span>
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-header structured">
+                <span>Section 2 — Constrained</span>
+                <span class="badge badge-blue">json_schema · strict</span>
+            </div>
+            <div class="panel-body" id="structured-output">
+                <span class="placeholder-text">Parsed structured response will appear here…</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- JSON reference for Section 2 -->
+    <div class="json-panel">
+        <div class="json-panel-header" onclick="toggleJson('compare-json-body', this)">
+            <span>JSON Reference — Section 2 raw structured response</span>
+            <span class="toggle-icon" id="compare-json-icon">▼ expand</span>
+        </div>
+        <div class="json-panel-body collapsed" id="compare-json-body">
+            <pre class="json-ref" id="compare-json-content"><span class="json-placeholder">Send a prompt to see the raw JSON here.</span></pre>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SECTION 3: SALAD ASSISTANT ===== -->
+<div id="salad-tab" class="tab-content">
+    <div class="controls">
+        <div class="salad-controls">
+            <div class="control-group">
+                <label>Max Turns &nbsp;<span class="val-label-green" id="turns-label">10</span></label>
+                <input type="range" id="max-turns" min="5" max="20" step="1" value="10"
+                       oninput="document.getElementById('turns-label').textContent = this.value"
+                       style="accent-color: #56ab2f;">
+            </div>
+            <div class="control-group">
+                <label>Max Tokens &nbsp;<span class="val-label-green" id="salad-tokens-label">2048</span></label>
+                <input type="range" id="salad-max-tokens" min="256" max="8192" step="256" value="2048"
+                       oninput="document.getElementById('salad-tokens-label').textContent = this.value"
+                       style="accent-color: #56ab2f;">
+            </div>
+            <button class="btn-primary" style="background: linear-gradient(135deg,#56ab2f,#a8e063);"
+                    onclick="resetSalad()">New Chat</button>
+        </div>
+    </div>
+
+    <div class="chat-container">
+        <div class="chat-header">Section 3 — Salad Assistant &nbsp;<small style="font-weight:400;opacity:0.85">(json_schema · strict · multi-turn)</small></div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="chat-start" id="chat-start">
+                <p>The assistant will ask up to 3 questions, then return a structured recipe object.</p>
+                <button class="btn-start" onclick="startSalad()">Start</button>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Type your reply…"
+                   onkeydown="if(event.key==='Enter' && !this.disabled) sendSalad()" disabled>
+            <button class="btn-send" id="send-btn" onclick="sendSalad()" disabled>Send</button>
+        </div>
+    </div>
+
+    <!-- JSON reference for Section 3 -->
+    <div class="json-panel" style="margin-top:20px;">
+        <div class="json-panel-header" onclick="toggleJson('salad-json-body', this)">
+            <span>JSON Reference — latest turn raw response</span>
+            <span class="toggle-icon" id="salad-json-icon">▼ expand</span>
+        </div>
+        <div class="json-panel-body collapsed" id="salad-json-body">
+            <pre class="json-ref" id="salad-json-content"><span class="json-placeholder">Start a conversation to see the raw JSON here.</span></pre>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---- Comparison state ----
+    let selectedLength = 'medium';
+
+    // ---- Salad state ----
+    let saladMessages = [];
+    let saladTurns    = 0;
+    let saladDone     = false;
+
+    // ---- Tabs ----
+    function switchTab(tab, btn) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(tab + '-tab').classList.add('active');
+        btn.classList.add('active');
+    }
+
+    function setLength(value, btn) {
+        selectedLength = value;
+        document.querySelectorAll('.length-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    // ============================================================
+    // SECTION 1 + 2: Comparison
+    // ============================================================
+    async function sendCompare() {
+        const prompt = document.getElementById('compare-prompt').value.trim();
+        if (!prompt) return;
+
+        const btn = document.getElementById('compare-btn');
+        btn.disabled = true;
+
+        const uEl = document.getElementById('unstructured-output');
+        const sEl = document.getElementById('structured-output');
+
+        uEl.className = 'panel-body loading';
+        uEl.innerHTML = '<div class="spinner"></div>';
+        sEl.className = 'panel-body loading';
+        sEl.innerHTML = '<div class="spinner"></div>';
+
+        try {
+            const res = await fetch('/api/compare', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    prompt,
+                    temperature: parseFloat(document.getElementById('temperature').value),
+                    length: selectedLength,
+                    maxTokens: parseInt(document.getElementById('compare-max-tokens').value)
+                })
+            });
+            const data = await res.json();
+
+            uEl.className = 'panel-body';
+            uEl.innerHTML = `<p>${escapeHtml(data.unstructured).replace(/\n/g, '<br>')}</p>`;
+
+            sEl.className = 'panel-body';
+            if (data.benefits && data.benefits.length > 0) {
+                const summary = data.benefits.find(b => b.title === '__summary__');
+                const listItems = data.benefits.filter(b => b.title !== '__summary__');
+
+                let html = '';
+                if (summary) {
+                    html += `<p style="margin-bottom:14px;font-style:italic;color:#444;">${escapeHtml(summary.detail)}</p>`;
+                }
+                if (listItems.length > 0) {
+                    html += listItems.map((b, i) => `
+                        <div class="benefit-item">
+                            <div>
+                                <span class="benefit-num">${i + 1}</span>
+                                <span class="benefit-title">${escapeHtml(b.title)}</span>
+                            </div>
+                            <div class="benefit-desc">${escapeHtml(b.detail)}</div>
+                        </div>`).join('');
+                }
+                sEl.innerHTML = html;
+
+                const jsonObj = { summary: summary?.detail ?? '', items: listItems.map(b => ({ title: b.title, detail: b.detail })) };
+                setJsonPanel('compare-json-content', jsonObj);
+            } else {
+                sEl.innerHTML = `<span style="color:#e74c3c;font-style:italic">Structured call failed — see server log.</span>`;
+            }
+        } catch (e) {
+            uEl.className = 'panel-body';
+            sEl.className = 'panel-body';
+            uEl.innerHTML = sEl.innerHTML = `<span style="color:#e74c3c;font-style:italic">Error: ${e.message}</span>`;
+        }
+
+        btn.disabled = false;
+    }
+
+    // ============================================================
+    // SECTION 3: Salad Assistant
+    // ============================================================
+    function resetSalad() {
+        saladMessages = [];
+        saladTurns    = 0;
+        saladDone     = false;
+        document.getElementById('chat-messages').innerHTML = `
+            <div class="chat-start" id="chat-start">
+                <p>The assistant will ask up to 3 questions, then return a structured recipe object.</p>
+                <button class="btn-start" onclick="startSalad()">Start</button>
+            </div>`;
+        document.getElementById('chat-input').disabled = true;
+        document.getElementById('send-btn').disabled   = true;
+    }
+
+    async function startSalad() {
+        document.getElementById('chat-start')?.remove();
+        saladMessages = [];
+        saladTurns    = 0;
+        saladDone     = false;
+
+        const first = 'I want to make a salad.';
+        appendBubble('user', first);
+        saladMessages.push({ role: 'user', content: first });
+        await callSaladApi();
+    }
+
+    async function sendSalad() {
+        if (saladDone) return;
+        const input = document.getElementById('chat-input');
+        const text  = input.value.trim();
+        if (!text) return;
+
+        input.value    = '';
+        input.disabled = true;
+        document.getElementById('send-btn').disabled = true;
+
+        appendBubble('user', text);
+        saladMessages.push({ role: 'user', content: text });
+        await callSaladApi();
+    }
+
+    async function callSaladApi() {
+        const maxTurns = parseInt(document.getElementById('max-turns').value);
+        saladTurns++;
+        if (saladTurns > maxTurns) {
+            appendBubble('assistant', '(Reached the turn limit.)');
+            return;
+        }
+
+        const typingId = 'typing-' + Date.now();
+        appendTyping(typingId);
+
+        try {
+            const res = await fetch('/api/salad', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: saladMessages,
+                    maxTokens: parseInt(document.getElementById('salad-max-tokens').value)
+                })
+            });
+            const data = await res.json();
+            removeEl(typingId);
+
+            const turnObj = { message: data.message, done: data.done, recipe: data.recipe ?? null };
+            saladMessages.push({ role: 'assistant', content: JSON.stringify(turnObj) });
+            setJsonPanel('salad-json-content', turnObj);
+
+            if (data.done) {
+                saladDone = true;
+                renderRecipe(data.message, data.recipe);
+            } else {
+                appendBubble('assistant', data.message);
+                document.getElementById('chat-input').disabled = false;
+                document.getElementById('send-btn').disabled   = false;
+                document.getElementById('chat-input').focus();
+            }
+        } catch (e) {
+            removeEl(typingId);
+            appendBubble('assistant', 'Error: ' + e.message);
+        }
+    }
+
+    function renderRecipe(introMessage, recipe) {
+        const chatEl = document.getElementById('chat-messages');
+        const div    = document.createElement('div');
+        div.className = 'recipe-card';
+
+        const ingredients = (recipe?.ingredients ?? [])
+            .map(ing => `<li>${escapeHtml(ing)}</li>`).join('');
+        const steps = (recipe?.steps ?? [])
+            .map(s => `<li>${escapeHtml(s)}</li>`).join('');
+
+        div.innerHTML = `
+            <p class="intro">${escapeHtml(introMessage)}</p>
+            <h2>${escapeHtml(recipe?.name ?? 'Your Salad')}</h2>
+            <h3>Ingredients</h3>
+            <ul>${ingredients}</ul>
+            <h3>Steps</h3>
+            <ol>${steps}</ol>`;
+
+        chatEl.appendChild(div);
+        chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function appendBubble(role, text) {
+        const chatEl = document.getElementById('chat-messages');
+        const div    = document.createElement('div');
+        div.className = `chat-bubble ${role}`;
+        div.textContent = text;
+        chatEl.appendChild(div);
+        chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function appendTyping(id) {
+        const chatEl = document.getElementById('chat-messages');
+        const div    = document.createElement('div');
+        div.id        = id;
+        div.className = 'chat-bubble assistant';
+        div.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;border-top-color:#56ab2f"></div>';
+        chatEl.appendChild(div);
+        chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function removeEl(id) { document.getElementById(id)?.remove(); }
+
+    function escapeHtml(str) {
+        return String(str ?? '')
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function syntaxHighlight(obj) {
+        const json = JSON.stringify(obj, null, 2);
+        return json
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(
+                /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
+                match => {
+                    let cls = 'json-num';
+                    if (/^"/.test(match))              cls = /:$/.test(match) ? 'json-key' : 'json-str';
+                    else if (/true|false/.test(match)) cls = 'json-bool';
+                    else if (/null/.test(match))       cls = 'json-null';
+                    return `<span class="${cls}">${match}</span>`;
+                }
+            );
+    }
+
+    function setJsonPanel(contentId, obj) {
+        document.getElementById(contentId).innerHTML = syntaxHighlight(obj);
+    }
+
+    function toggleJson(bodyId, header) {
+        const body = document.getElementById(bodyId);
+        const icon = header.querySelector('.toggle-icon');
+        const collapsed = body.classList.toggle('collapsed');
+        icon.textContent = collapsed ? '▼ expand' : '▲ collapse';
+    }
+</script>
+</body>
+</html>
