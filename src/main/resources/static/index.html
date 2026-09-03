@@ -441,7 +441,7 @@
             <div class="control-group">
                 <label>Max Turns &nbsp;<span class="val-label-green" id="turns-label">10</span></label>
                 <input type="range" id="max-turns" min="5" max="20" step="1" value="10"
-                       oninput="document.getElementById('turns-label').textContent = this.value"
+                       oninput="document.getElementById('turns-label').textContent = this.value; updateSaladDesc()"
                        style="accent-color: #56ab2f;">
             </div>
             <div class="control-group">
@@ -459,7 +459,7 @@
         <div class="chat-header">Section 3 — Salad Assistant &nbsp;<small style="font-weight:400;opacity:0.85">(json_schema · strict · multi-turn)</small></div>
         <div class="chat-messages" id="chat-messages">
             <div class="chat-start" id="chat-start">
-                <p>The assistant will ask up to 3 questions, then return a structured recipe object.</p>
+                <p id="salad-desc">The assistant will ask up to 10 questions, then return a structured recipe object.</p>
                 <button class="btn-start" onclick="startSalad()">Start</button>
             </div>
         </div>
@@ -577,13 +577,18 @@
     // ============================================================
     // SECTION 3: Salad Assistant
     // ============================================================
+    function updateSaladDesc() {
+        const el = document.getElementById('salad-desc');
+        if (el) el.textContent = `The assistant will ask up to ${document.getElementById('max-turns').value} questions, then return a structured recipe object.`;
+    }
+
     function resetSalad() {
         saladMessages = [];
         saladTurns    = 0;
         saladDone     = false;
         document.getElementById('chat-messages').innerHTML = `
             <div class="chat-start" id="chat-start">
-                <p>The assistant will ask up to 3 questions, then return a structured recipe object.</p>
+                <p id="salad-desc">The assistant will ask up to ${document.getElementById('max-turns').value} questions, then return a structured recipe object.</p>
                 <button class="btn-start" onclick="startSalad()">Start</button>
             </div>`;
         document.getElementById('chat-input').disabled = true;
@@ -634,7 +639,8 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     messages: saladMessages,
-                    maxTokens: parseInt(document.getElementById('salad-max-tokens').value)
+                    maxTokens: parseInt(document.getElementById('salad-max-tokens').value),
+                    maxTurns:  parseInt(document.getElementById('max-turns').value)
                 })
             });
             const data = await res.json();

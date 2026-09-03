@@ -169,7 +169,7 @@ public class GroqService {
     // ----------------------------------------------------------------
     // Section 3: multi-turn salad assistant, strict json_schema every turn
     // ----------------------------------------------------------------
-    public SaladResponse saladTurn(List<ChatMessage> messages, int maxTokens) throws Exception {
+    public SaladResponse saladTurn(List<ChatMessage> messages, int maxTokens, int maxTurns) throws Exception {
         ObjectNode body = mapper.createObjectNode();
         body.put("model", MODEL);
         body.put("max_tokens", maxTokens);
@@ -180,7 +180,7 @@ public class GroqService {
             .put("content",
                 "You are a salad recipe assistant. Ask ONE short question at a time to gather: "
                 + "kind of salad, dietary restrictions, and ingredients on hand. "
-                + "Ask at most 3 questions total. "
+                + "Ask at most " + maxTurns + " questions total. "
                 + "While still gathering: set done=false, put your question in message, set recipe=null. "
                 + "Once you have enough info: set done=true, put a one-line intro in message, "
                 + "and fill recipe with name, an ingredients array, and a steps array.");

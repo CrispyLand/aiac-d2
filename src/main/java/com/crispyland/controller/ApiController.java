@@ -37,7 +37,7 @@ public class ApiController {
     @PostMapping("/salad")
     public ResponseEntity<SaladResponse> saladTurn(@RequestBody SaladRequest request) {
         try {
-            return ResponseEntity.ok(groqService.saladTurn(request.getMessages(), request.getMaxTokens()));
+            return ResponseEntity.ok(groqService.saladTurn(request.getMessages(), request.getMaxTokens(), request.getMaxTurns()));
         } catch (Exception e) {
             String msg = e.getMessage() != null ? e.getMessage() : "Unknown error";
             return ResponseEntity.ok(new SaladResponse("API Error: " + msg, true, null));
